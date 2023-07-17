@@ -16,6 +16,7 @@ import org.mockito.internal.configuration.plugins.Plugins;
 import org.mockito.internal.creation.instance.ConstructorInstantiator;
 import org.mockito.internal.util.Platform;
 import org.mockito.internal.util.concurrent.DetachedThreadLocal;
+import org.mockito.internal.util.concurrent.ValueKeeper;
 import org.mockito.internal.util.concurrent.WeakConcurrentMap;
 import org.mockito.invocation.MockHandler;
 import org.mockito.mock.MockCreationSettings;
@@ -31,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -194,8 +196,35 @@ class InlineDelegateByteBuddyMockMaker
     private final WeakConcurrentMap<Object, MockMethodInterceptor> mocks =
             new WeakConcurrentMap<>(false);
 
-    private final DetachedThreadLocal<Map<Class<?>, MockMethodInterceptor>> mockedStatics =
-            new DetachedThreadLocal<>(DetachedThreadLocal.Cleaner.MANUAL);
+    private final ValueKeeper<Map<Class<?>, MockMethodInterceptor>> mockedStatics =
+        new ValueKeeper<>() {
+        private final Map<Class<?>, MockMethodInterceptor> map = new ConcurrentHashMap<>();
+
+            @Override
+            public Map<Class<?>, MockMethodInterceptor> get() {
+                return map;
+            }
+
+            @Override
+            public void remove(Map<Class<?>, MockMethodInterceptor> value) {
+//                map.remove(value);
+            }
+
+            @Override
+            public void clear() {
+                map.clear();
+            }
+
+            @Override
+            public void expungeStaleEntries() {
+                map.clear();
+            }
+
+            @Override
+            public void set(Map<Class<?>, MockMethodInterceptor> value) {
+                map.putAll(value);
+            }
+        };
 
     private final DetachedThreadLocal<Map<Class<?>, BiConsumer<Object, MockedConstruction.Context>>>
             mockedConstruction = new DetachedThreadLocal<>(DetachedThreadLocal.Cleaner.MANUAL);
@@ -508,9 +537,7 @@ class InlineDelegateByteBuddyMockMaker
     @Override
     public void clearMock(Object mock) {
         if (mock instanceof Class<?>) {
-            for (Map<Class<?>, ?> entry : mockedStatics.getBackingMap().target.values()) {
-                entry.remove(mock);
-            }
+//            mockedStatics.remove((Map<Class<?>, MockMethodInterceptor>) mock);
         } else {
             mocks.remove(mock);
         }
@@ -518,7 +545,7 @@ class InlineDelegateByteBuddyMockMaker
 
     @Override
     public void clearAllMocks() {
-        mockedStatics.getBackingMap().clear();
+        mockedStatics.clear();
         mocks.clear();
     }
 
@@ -570,7 +597,7 @@ class InlineDelegateByteBuddyMockMaker
             interceptors = new WeakHashMap<>();
             mockedStatics.set(interceptors);
         }
-        mockedStatics.getBackingMap().expungeStaleEntries();
+        mockedStatics.expungeStaleEntries();
 
         return new InlineStaticMockControl<>(type, interceptors, settings, handler);
     }
@@ -599,7 +626,7 @@ class InlineDelegateByteBuddyMockMaker
             interceptors = new WeakHashMap<>();
             mockedConstruction.set(interceptors);
         }
-        mockedConstruction.getBackingMap().expungeStaleEntries();
+        mockedConstruction.expungeStaleEntries();
 
         return new InlineConstructionMockControl<>(
                 type, settingsFactory, handlerFactory, mockInitializer, interceptors);

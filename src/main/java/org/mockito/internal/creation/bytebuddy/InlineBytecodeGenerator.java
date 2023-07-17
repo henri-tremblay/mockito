@@ -28,6 +28,7 @@ import org.mockito.exceptions.base.MockitoException;
 import org.mockito.internal.SuppressSignatureCheck;
 import org.mockito.internal.creation.bytebuddy.inject.MockMethodDispatcher;
 import org.mockito.internal.util.concurrent.DetachedThreadLocal;
+import org.mockito.internal.util.concurrent.ValueKeeper;
 import org.mockito.internal.util.concurrent.WeakConcurrentMap;
 import org.mockito.internal.util.concurrent.WeakConcurrentSet;
 import org.mockito.mock.SerializableMode;
@@ -83,7 +84,7 @@ public class InlineBytecodeGenerator implements BytecodeGenerator, ClassFileTran
     public InlineBytecodeGenerator(
             Instrumentation instrumentation,
             WeakConcurrentMap<Object, MockMethodInterceptor> mocks,
-            DetachedThreadLocal<Map<Class<?>, MockMethodInterceptor>> mockedStatics,
+            ValueKeeper<Map<Class<?>, MockMethodInterceptor>> mockedStatics,
             Predicate<Class<?>> isMockConstruction,
             ConstructionCallback onConstruction) {
         preload();

@@ -4,6 +4,8 @@
  */
 package org.mockito.internal.util.concurrent;
 
+import java.util.Map;
+
 /**
  * <p>
  * A detached local that allows for explicit control of setting and removing values from a thread-local
@@ -11,7 +13,7 @@ package org.mockito.internal.util.concurrent;
  * </p>
  * Instances of this class are non-blocking and fully thread safe.
  */
-public class DetachedThreadLocal<T> implements Runnable {
+public class DetachedThreadLocal<T> implements Runnable, ValueKeeper<T> {
 
     final WeakConcurrentMap<Thread, T> map;
 
@@ -121,6 +123,15 @@ public class DetachedThreadLocal<T> implements Runnable {
      */
     public WeakConcurrentMap<Thread, T> getBackingMap() {
         return map;
+    }
+
+    @Override
+    public void expungeStaleEntries() {
+        map.expungeStaleEntries();
+    }
+
+    public void remove(T value) {
+
     }
 
     @Override

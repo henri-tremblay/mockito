@@ -58,13 +58,14 @@ import org.mockito.internal.invocation.SerializableMethod;
 import org.mockito.internal.invocation.mockref.MockReference;
 import org.mockito.internal.invocation.mockref.MockWeakReference;
 import org.mockito.internal.util.concurrent.DetachedThreadLocal;
+import org.mockito.internal.util.concurrent.ValueKeeper;
 import org.mockito.internal.util.concurrent.WeakConcurrentMap;
 import org.mockito.plugins.MemberAccessor;
 
 public class MockMethodAdvice extends MockMethodDispatcher {
 
     private final WeakConcurrentMap<Object, MockMethodInterceptor> interceptors;
-    private final DetachedThreadLocal<Map<Class<?>, MockMethodInterceptor>> mockedStatics;
+    private final ValueKeeper<Map<Class<?>, MockMethodInterceptor>> mockedStatics;
 
     private final String identifier;
 
@@ -78,7 +79,7 @@ public class MockMethodAdvice extends MockMethodDispatcher {
 
     public MockMethodAdvice(
             WeakConcurrentMap<Object, MockMethodInterceptor> interceptors,
-            DetachedThreadLocal<Map<Class<?>, MockMethodInterceptor>> mockedStatics,
+            ValueKeeper<Map<Class<?>, MockMethodInterceptor>> mockedStatics,
             String identifier,
             Predicate<Class<?>> isMockConstruction,
             ConstructionCallback onConstruction) {

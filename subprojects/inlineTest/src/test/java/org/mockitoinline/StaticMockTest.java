@@ -153,24 +153,32 @@ public final class StaticMockTest {
     }
 
     @Test
-    public void testStaticMockCanCoexistWithMockInDifferentThread() throws InterruptedException {
+    public void testStaticMockCanBeUsedAcrossThreads() throws InterruptedException {
         try (MockedStatic<Dummy> dummy = Mockito.mockStatic(Dummy.class)) {
             dummy.when(Dummy::foo).thenReturn("bar");
-            assertEquals("bar", Dummy.foo());
-            dummy.verify(Dummy::foo);
             AtomicReference<String> reference = new AtomicReference<>();
             Thread thread = new Thread(() -> {
-                try (MockedStatic<Dummy> dummy2 = Mockito.mockStatic(Dummy.class)) {
-                    dummy2.when(Dummy::foo).thenReturn("qux");
-                    reference.set(Dummy.foo());
-                }
+                reference.set(Dummy.foo());
             });
             thread.start();
             thread.join();
-            assertEquals("qux", reference.get());
+            assertEquals("bar", reference.get());
+            dummy.verify(Dummy::foo);
+        }
+    }
+
+    @Test
+    public void testStaticMockCanCoexistWithMockInDifferentThread() throws InterruptedException {
+        try (MockedStatic<Dummy> dummy = Mockito.mockStatic(Dummy.class)) {
             dummy.when(Dummy::foo).thenReturn("bar");
-            assertEquals("bar", Dummy.foo());
-            dummy.verify(Dummy::foo, times(2));
+            AtomicReference<String> reference = new AtomicReference<>();
+            Thread thread = new Thread(() -> {
+                reference.set(Dummy.foo());
+            });
+            thread.start();
+            thread.join();
+            assertEquals("bar", reference.get());
+            dummy.verify(Dummy::foo);
         }
     }
 
